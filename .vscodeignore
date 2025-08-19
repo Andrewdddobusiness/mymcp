@@ -8,6 +8,7 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
+!**/*.d.ts
 tickets/**
 agents/**
 .github/**
@@ -17,3 +18,8 @@ coverage/**
 .nyc_output/**
 node_modules/**
 .DS_Store
+CONTRIBUTING.md
+.mocharc.json
+.nycrc.json
+**/*.test.ts
+**/test/**

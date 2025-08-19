@@ -2,8 +2,20 @@
   "name": "copilot-mcp-bridge",
   "displayName": "GitHub Copilot MCP Bridge",
   "description": "Connect GitHub Copilot to MCP (Model Context Protocol) servers for enhanced AI capabilities",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "your-publisher-id",
+  "icon": "resources/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/copilot-mcp-bridge"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/copilot-mcp-bridge/issues"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -20,6 +32,9 @@
   ],
   "activationEvents": [
     "onStartupFinished"
+  ],
+  "extensionDependencies": [
+    "github.copilot-chat"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -113,9 +128,12 @@
     "lint:fix": "eslint src --ext ts --fix",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prerelease": "node scripts/prerelease.js"
+    "prerelease": "ts-node scripts/prerelease.ts",
+    "vsce:package": "vsce package",
+    "vsce:publish": "vsce publish"
   },
   "devDependencies": {
+    "@vscode/vsce": "^2.22.0",
     "@types/chai": "^4.3.0",
     "@types/mocha": "^10.0.0",
     "@types/node": "^20.0.0",

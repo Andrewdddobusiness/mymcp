@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Determine version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=${{ github.event.inputs.version }}
+        fi
+        
+        # Validate semver format
+        if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          echo "Error: Invalid version format: $VERSION"
+          exit 1
+        fi
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run pre-release checks
+      run: npm run prerelease
+
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm install -g @vscode/vsce
+    
+    - name: Update version
+      run: |
+        npm version ${{ needs.validate.outputs.version }} --no-git-tag-version
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add package.json package-lock.json
+        git diff --staged --quiet || git commit -m "chore: bump version to ${{ needs.validate.outputs.version }}"
+    
+    - name: Build extension
+      run: npm run compile
+    
+    - name: Package extension
+      run: vsce package
+    
+    - name: Upload VSIX artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: vsix-package
+        path: '*.vsix'
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Extract changelog for this version
+        VERSION=${{ needs.validate.outputs.version }}
+        CHANGELOG=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$ d')
+        
+        # Save to file for release notes
+        echo "$CHANGELOG" > release-notes.md
+        
+        # Set multiline output
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  publish:
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.inputs.prerelease || github.event.inputs.prerelease == 'false' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+    
+    - name: Download VSIX artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vsix-package
+    
+    - name: Install vsce
+      run: npm install -g @vscode/vsce
+    
+    - name: Publish to VS Code Marketplace
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      run: |
+        VSIX_FILE=$(ls *.vsix | head -n 1)
+        vsce publish --packagePath "$VSIX_FILE"
+
+  release:
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download VSIX artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: vsix-package
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.validate.outputs.version }}
+        name: Release v${{ needs.validate.outputs.version }}
+        body: |
+          ## What's Changed
+          
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed release notes.
+          
+          ## Installation
+          
+          ### From VS Code Marketplace
+          1. Open VS Code
+          2. Go to Extensions (Ctrl/Cmd + Shift + X)
+          3. Search for "Copilot MCP Bridge"
+          4. Click Install
+          
+          ### Manual Installation
+          1. Download the `.vsix` file from the assets below
+          2. Open VS Code
+          3. Go to Extensions (Ctrl/Cmd + Shift + X)
+          4. Click the "..." menu and select "Install from VSIX..."
+          5. Select the downloaded file
+        files: '*.vsix'
+        prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
