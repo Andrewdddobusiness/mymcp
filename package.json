@@ -1,0 +1,136 @@
+{
+  "name": "copilot-mcp-bridge",
+  "displayName": "GitHub Copilot MCP Bridge",
+  "description": "Connect GitHub Copilot to MCP (Model Context Protocol) servers for enhanced AI capabilities",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "copilot",
+    "mcp",
+    "ai",
+    "model-context-protocol",
+    "github-copilot"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "copilot-mcp.configure",
+        "title": "Configure MCP Servers",
+        "category": "Copilot MCP"
+      },
+      {
+        "command": "copilot-mcp.showStatus",
+        "title": "Show MCP Status",
+        "category": "Copilot MCP"
+      }
+    ],
+    "configuration": {
+      "title": "Copilot MCP Bridge",
+      "properties": {
+        "copilot-mcp.servers": {
+          "type": "array",
+          "default": [],
+          "description": "MCP server configurations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique server identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name for the server"
+              },
+              "transport": {
+                "type": "string",
+                "enum": ["stdio", "http", "websocket"],
+                "description": "Transport method"
+              },
+              "command": {
+                "type": "string",
+                "description": "Command to run (for stdio transport)"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Command arguments"
+              },
+              "url": {
+                "type": "string",
+                "description": "Server URL (for HTTP/WebSocket transport)"
+              },
+              "env": {
+                "type": "object",
+                "description": "Environment variables"
+              }
+            }
+          }
+        },
+        "copilot-mcp.enableTelemetry": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable telemetry for usage analytics"
+        }
+      }
+    },
+    "chatParticipants": [
+      {
+        "id": "mcp-bridge",
+        "name": "MCP",
+        "description": "Access MCP server tools and resources",
+        "isSticky": true
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "mocha 'src/test/unit/**/*.test.ts' --require ts-node/register",
+    "test:integration": "node ./out/test/runTest.js",
+    "test:coverage": "nyc npm run test:unit",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prerelease": "node scripts/prerelease.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/chai": "^4.3.0",
+    "@types/sinon": "^17.0.0",
+    "typescript": "^5.3.0",
+    "esbuild": "^0.19.0",
+    "@vscode/test-electron": "^2.3.0",
+    "mocha": "^10.2.0",
+    "chai": "^4.4.0",
+    "sinon": "^17.0.0",
+    "nyc": "^15.1.0",
+    "ts-node": "^10.9.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "prettier": "^3.1.0"
+  },
+  "dependencies": {
+    "winston": "^3.11.0"
+  }
+}
