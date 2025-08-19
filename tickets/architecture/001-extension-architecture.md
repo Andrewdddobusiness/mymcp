@@ -5,10 +5,10 @@ Design the core architecture for the Copilot-MCP bridge extension, defining the 
 
 ## Acceptance Criteria
 - [ ] Complete architecture diagram created
-- [ ] Component responsibilities clearly defined
-- [ ] Data flow between components documented
-- [ ] Extension lifecycle management defined
-- [ ] Error handling strategy documented
+- [x] Component responsibilities clearly defined
+- [x] Data flow between components documented
+- [x] Extension lifecycle management defined
+- [x] Error handling strategy documented
 
 ## Architecture Components
 

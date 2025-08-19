@@ -4,11 +4,11 @@
 Design the MCP (Model Context Protocol) client implementation for connecting to various MCP servers from the VS Code extension.
 
 ## Acceptance Criteria
-- [ ] MCP protocol client fully specified
-- [ ] Transport layer abstraction designed
-- [ ] Server discovery mechanism defined
-- [ ] Error handling and retry logic documented
-- [ ] Connection pooling strategy defined
+- [x] MCP protocol client fully specified
+- [x] Transport layer abstraction designed
+- [x] Server discovery mechanism defined
+- [x] Error handling and retry logic documented
+- [x] Connection pooling strategy defined
 
 ## MCP Client Architecture
 
