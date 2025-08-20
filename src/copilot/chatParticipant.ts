@@ -23,7 +23,14 @@ export class MCPChatParticipant {
 
   async register(): Promise<void> {
     try {
-      const participant = vscode.chat.createChatParticipant(
+      // Check if chat participant API is available
+      const chatApi = (vscode.chat as any);
+      if (!chatApi || !chatApi.createChatParticipant) {
+        this.logger.warn('Chat participant API not available in this VS Code version');
+        return;
+      }
+
+      const participant = chatApi.createChatParticipant(
         MCPChatParticipant.PARTICIPANT_ID,
         this.handleChatRequest.bind(this)
       );

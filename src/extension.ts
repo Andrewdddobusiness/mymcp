@@ -14,9 +14,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     // Initialize core components
     configStorage.initializeConfigStorage(context);
-    mcpManager = new MCPManager(context);
+    mcpManager = new MCPManager(context, logger);
     statusBar.initializeStatusBar(context);
-    copilotIntegration = new CopilotIntegration(context, mcpManager);
+    copilotIntegration = new CopilotIntegration(context, mcpManager, logger);
 
     // Register commands
     registerCommands(context);

@@ -21,6 +21,15 @@ export class CopilotIntegration {
     try {
       this.logger.info('Registering Copilot integration components...');
 
+      // Check if chat APIs are available
+      if (!(vscode.chat as any)) {
+        this.logger.warn('VS Code Chat API not available - Copilot chat features disabled');
+        // Still register commands for MCP management
+        this.registerAdditionalCommands();
+        this.setupEventHandlers();
+        return;
+      }
+
       // Register chat participant
       await this.chatParticipant.register();
 

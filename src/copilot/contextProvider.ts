@@ -10,22 +10,29 @@ export class MCPContextProvider {
 
   async register(): Promise<void> {
     try {
+      // Check if chat variable resolver API is available
+      const chatApi = (vscode.chat as any);
+      if (!chatApi || !chatApi.registerChatVariableResolver) {
+        this.logger.warn('Chat variable resolver API not available in this VS Code version');
+        return;
+      }
+
       // Register the main MCP context variable
-      vscode.chat.registerChatVariableResolver(
+      chatApi.registerChatVariableResolver(
         'mcp',
         'Access MCP tools and resources',
         this.resolveMCPVariable.bind(this)
       );
 
       // Register tool-specific variables
-      vscode.chat.registerChatVariableResolver(
+      chatApi.registerChatVariableResolver(
         'mcp-tools',
         'List all available MCP tools',
         this.resolveToolsVariable.bind(this)
       );
 
       // Register server status variable
-      vscode.chat.registerChatVariableResolver(
+      chatApi.registerChatVariableResolver(
         'mcp-servers',
         'Get MCP server connection status',
         this.resolveServersVariable.bind(this)
@@ -40,9 +47,9 @@ export class MCPContextProvider {
 
   private async resolveMCPVariable(
     name: string,
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     try {
       // Handle different MCP variable formats
       if (name === 'tools') {
@@ -71,8 +78,8 @@ export class MCPContextProvider {
     } catch (error) {
       this.logger.error('Error resolving MCP variable', { name, error });
       return [{
-        level: vscode.ChatVariableLevel.Short,
-        value: `Error: ${error.message}`,
+        level: 1, // ChatVariableLevel.Short
+        value: `Error: ${(error as Error).message}`,
         description: `Failed to resolve MCP variable: ${name}`
       }];
     }
@@ -80,16 +87,16 @@ export class MCPContextProvider {
 
   private async resolveToolsVariable(
     name: string,
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     if (token.isCancellationRequested) return [];
 
     const tools = await this.mcpManager.listTools();
     
     if (tools.length === 0) {
       return [{
-        level: vscode.ChatVariableLevel.Short,
+        level: 1, // ChatVariableLevel.Short
         value: 'No MCP tools available',
         description: 'No MCP servers connected or no tools configured'
       }];
@@ -100,7 +107,7 @@ export class MCPContextProvider {
     ).join('\n');
 
     return [{
-      level: vscode.ChatVariableLevel.Full,
+      level: 3, // ChatVariableLevel.Full
       value: `Available MCP Tools:\n${toolsList}`,
       description: `${tools.length} MCP tools available`
     }];
@@ -108,16 +115,16 @@ export class MCPContextProvider {
 
   private async resolveServersVariable(
     name: string,
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     if (token.isCancellationRequested) return [];
 
     const servers = await this.mcpManager.getServerStatus();
     
     if (servers.length === 0) {
       return [{
-        level: vscode.ChatVariableLevel.Short,
+        level: 1, // ChatVariableLevel.Short
         value: 'No MCP servers configured',
         description: 'Configure MCP servers in VS Code settings'
       }];
@@ -128,7 +135,7 @@ export class MCPContextProvider {
     ).join('\n');
 
     return [{
-      level: vscode.ChatVariableLevel.Medium,
+      level: 2, // ChatVariableLevel.Medium
       value: `MCP Server Status:\n${serverStatus}`,
       description: `${servers.length} MCP servers configured`
     }];
@@ -137,9 +144,9 @@ export class MCPContextProvider {
   private async resolveToolExecution(
     toolName: string,
     argsString: string,
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     if (token.isCancellationRequested) return [];
 
     try {
@@ -150,7 +157,7 @@ export class MCPContextProvider {
       const toolInfo = await this.mcpManager.findTool(toolName);
       if (!toolInfo) {
         return [{
-          level: vscode.ChatVariableLevel.Short,
+          level: 1, // ChatVariableLevel.Short
           value: `Tool "${toolName}" not found`,
           description: 'Check available tools with @mcp:tools'
         }];
@@ -167,15 +174,15 @@ export class MCPContextProvider {
         : JSON.stringify(result, null, 2);
 
       return [{
-        level: vscode.ChatVariableLevel.Full,
+        level: 3, // ChatVariableLevel.Full
         value: resultString,
         description: `Result from ${toolName}`
       }];
 
     } catch (error) {
       return [{
-        level: vscode.ChatVariableLevel.Short,
-        value: `Execution failed: ${error.message}`,
+        level: 1, // ChatVariableLevel.Short
+        value: `Execution failed: ${(error as Error).message}`,
         description: `Error executing ${toolName}`
       }];
     }
@@ -183,9 +190,9 @@ export class MCPContextProvider {
 
   private async resolveToolInfo(
     toolInfo: {serverId: string, tool: any},
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     if (token.isCancellationRequested) return [];
 
     const {serverId, tool} = toolInfo;
@@ -201,16 +208,16 @@ export class MCPContextProvider {
     }
 
     return [{
-      level: vscode.ChatVariableLevel.Medium,
+      level: 2, // ChatVariableLevel.Medium
       value: info,
       description: `Information about ${tool.name}`
     }];
   }
 
   private async resolveGeneralStatus(
-    context: vscode.ChatVariableContext,
+    context: any,
     token: vscode.CancellationToken
-  ): Promise<vscode.ChatVariableValue[]> {
+  ): Promise<any[]> {
     if (token.isCancellationRequested) return [];
 
     const [tools, servers] = await Promise.all([
@@ -225,7 +232,7 @@ export class MCPContextProvider {
 - ${tools.length} tools available`;
 
     return [{
-      level: vscode.ChatVariableLevel.Medium,
+      level: 2, // ChatVariableLevel.Medium
       value: status,
       description: 'MCP Bridge overview'
     }];
