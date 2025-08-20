@@ -4,11 +4,11 @@
 Implement the core MCP client that handles protocol communication, server lifecycle management, and tool execution.
 
 ## Acceptance Criteria
-- [ ] MCP client can connect to stdio-based servers
-- [ ] Protocol handshake and initialization working
-- [ ] Tool discovery and execution implemented
-- [ ] Error handling and reconnection logic in place
-- [ ] Connection pooling implemented
+- [x] MCP client can connect to stdio-based servers
+- [x] Protocol handshake and initialization working
+- [x] Tool discovery and execution implemented
+- [x] Error handling and reconnection logic in place
+- [x] Connection pooling implemented
 
 ## Implementation Details
 
