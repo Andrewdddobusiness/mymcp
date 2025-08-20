@@ -1,26 +1,22 @@
 import * as vscode from 'vscode';
 import { MCPManager } from './mcp/manager';
 import { CopilotIntegration } from './copilot/integration';
-import { ConfigurationStorage } from './config/storage';
-import { StatusBarManager } from './ui/statusBar';
-import { Logger } from './utils/logger';
+import * as configStorage from './config/storage';
+import * as statusBar from './ui/statusBar';
+import * as logger from './utils/logger';
 
 let mcpManager: MCPManager;
 let copilotIntegration: CopilotIntegration;
-let configStorage: ConfigurationStorage;
-let statusBar: StatusBarManager;
-let logger: Logger;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  logger = new Logger();
   logger.info('Copilot MCP Bridge is activating...');
 
   try {
     // Initialize core components
-    configStorage = new ConfigurationStorage(context);
-    mcpManager = new MCPManager(context, logger);
-    statusBar = new StatusBarManager(context);
-    copilotIntegration = new CopilotIntegration(context, mcpManager, logger);
+    configStorage.initializeConfigStorage(context);
+    mcpManager = new MCPManager(context);
+    statusBar.initializeStatusBar(context);
+    copilotIntegration = new CopilotIntegration(context, mcpManager);
 
     // Register commands
     registerCommands(context);
@@ -28,7 +24,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Initialize components
     await mcpManager.initialize();
     await copilotIntegration.register();
-    statusBar.show();
+    statusBar.show(context);
 
     // Set up configuration change listener
     context.subscriptions.push(
@@ -51,19 +47,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export async function deactivate(): Promise<void> {
-  logger?.info('Copilot MCP Bridge is deactivating...');
+  logger.info('Copilot MCP Bridge is deactivating...');
 
   try {
     if (mcpManager) {
       await mcpManager.dispose();
     }
-    if (statusBar) {
-      statusBar.dispose();
-    }
+    statusBar.dispose();
     
-    logger?.info('Copilot MCP Bridge deactivated successfully');
+    logger.info('Copilot MCP Bridge deactivated successfully');
   } catch (error) {
-    logger?.error('Error during deactivation', error);
+    logger.error('Error during deactivation', error);
+  } finally {
+    logger.dispose();
   }
 }
 
