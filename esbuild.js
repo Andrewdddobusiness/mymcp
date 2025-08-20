@@ -61,13 +61,13 @@ async function main() {
     await ctx.watch();
     console.log('Watching for changes...');
   } else {
-    await ctx.rebuild();
+    const result = await ctx.rebuild();
     await ctx.dispose();
     
-    if (production) {
+    if (production && result.metafile) {
       // Write bundle analysis
       const fs = require('fs');
-      fs.writeFileSync('dist/metafile.json', JSON.stringify(ctx.metafile, null, 2));
+      fs.writeFileSync('dist/metafile.json', JSON.stringify(result.metafile, null, 2));
     }
   }
 }

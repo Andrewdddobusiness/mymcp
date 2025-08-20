@@ -5,15 +5,23 @@ All notable changes to the Copilot MCP Bridge extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2024-08-20
+### Added
+- Initial release of GitHub Copilot MCP Bridge extension
+- GitHub Copilot chat participant (@mcp) for seamless MCP tool integration  
+- Comprehensive MCP protocol client with stdio, HTTP, and WebSocket transport support
+- Advanced connection pooling with health checks and automatic reconnection
+- Server configuration management via VS Code settings
+- Server discovery from Claude Desktop configuration files
+- Secure credential storage using VS Code secrets API
+- Real-time status monitoring with status bar integration
+- Tool discovery, validation, and execution with progress tracking
+- Support for structured tool responses (tables, code, images)
+- Comprehensive error handling and user-friendly error messages
+
 ## [Unreleased]
 ### Added
-- Initial architecture implementation
-- Core extension scaffold with TypeScript
-- MCP protocol v1.0 implementation
-- GitHub Copilot chat integration
-- Multiple transport support (stdio, HTTP, WebSocket)
-- Connection pooling and health monitoring
-- Server discovery from multiple sources
+- Future features and improvements will be listed here
 
 ## [0.1.0] - 2024-12-19
 ### Added
