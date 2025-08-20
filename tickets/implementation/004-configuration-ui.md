@@ -3,12 +3,15 @@
 ## Ticket Description
 Create a webview-based configuration interface for managing MCP server connections, including adding, editing, testing, and removing servers.
 
+## Implementation Note
+The configuration UI was implemented using VS Code's built-in settings UI instead of a custom webview. This provides a more native experience and leverages VS Code's existing infrastructure for configuration management. The webview approach can be added later if needed.
+
 ## Acceptance Criteria
-- [ ] Webview UI displays list of configured servers
-- [ ] Users can add new server configurations
-- [ ] Users can edit existing configurations
-- [ ] Connection testing functionality works
-- [ ] Secure credential storage implemented
+- [ ] Webview UI displays list of configured servers (Implemented via VS Code Settings UI instead)
+- [x] Users can add new server configurations
+- [x] Users can edit existing configurations
+- [x] Connection testing functionality works
+- [x] Secure credential storage implemented
 
 ## Implementation Details
 
