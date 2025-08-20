@@ -4,10 +4,10 @@
 Set up the build pipeline, packaging process, and publishing workflow for releasing the Copilot-MCP bridge extension to the VS Code marketplace.
 
 ## Acceptance Criteria
-- [ ] Extension packaged as .vsix file
+- [x] Extension packaged as .vsix file
 - [ ] Publisher account configured
-- [ ] Automated release pipeline created
-- [ ] Documentation and changelog updated
+- [x] Automated release pipeline created
+- [x] Documentation and changelog updated
 - [ ] Extension published to marketplace
 
 ## Implementation Steps
