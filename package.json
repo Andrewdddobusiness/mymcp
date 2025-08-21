@@ -48,8 +48,40 @@
         "command": "copilot-mcp.showStatus",
         "title": "Show MCP Status",
         "category": "Copilot MCP"
+      },
+      {
+        "command": "copilot-mcp.refreshTreeView",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilot-mcp.showToolDetails",
+        "title": "Show Tool Details"
+      },
+      {
+        "command": "copilot-mcp.debugServerDetails",
+        "title": "Debug Server Details",
+        "category": "Copilot MCP"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "mcpExplorer",
+          "name": "MCP Servers",
+          "when": "true"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "copilot-mcp.refreshTreeView",
+          "when": "view == mcpExplorer",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Copilot MCP Bridge",
       "properties": {

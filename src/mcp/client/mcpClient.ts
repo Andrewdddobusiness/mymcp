@@ -59,6 +59,14 @@ export class MCPClient extends EventEmitter {
 
   private setupTransportEvents(): void {
     this.transport.on('connect', () => {
+      // If this is a reconnection (not initial connection), re-initialize
+      if (this.initializationPromise && !this.initialized) {
+        console.log(`[${this.serverId}] Transport reconnected, re-initializing MCP protocol...`);
+        this.initialize().catch(error => {
+          console.error(`[${this.serverId}] Re-initialization failed:`, error);
+          this.emit('error', error);
+        });
+      }
       this.emit('connect');
     });
 

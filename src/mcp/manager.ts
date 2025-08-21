@@ -4,6 +4,7 @@ import { MCPConnectionPool } from './client/connectionPool';
 import { ServerDiscovery, DiscoveredServer } from './discovery/serverDiscovery';
 import { MCPTool, ServerConfig, ConnectionState } from './types/protocol';
 import { Logger, ServerListItem } from '../types';
+import * as statusBar from '../ui/statusBar';
 
 export class MCPManager {
   private pool = new MCPConnectionPool();
@@ -39,6 +40,9 @@ export class MCPManager {
       // Start periodic status checks
       this.startStatusChecks();
 
+      // Update status bar after initialization
+      this.updateStatusBar();
+
       this.logger.info(`MCP Manager initialized with ${this.servers.size} servers`);
     } catch (error) {
       this.logger.error('Failed to initialize MCP Manager', error);
@@ -50,18 +54,32 @@ export class MCPManager {
     // Pool event handlers
     this.pool.on('connectionCreated', ({ serverId, client }) => {
       this.logger.info(`MCP connection created: ${serverId}`);
+      this.updateStatusBar();
     });
 
     this.pool.on('connectionLost', ({ serverId }) => {
       this.logger.warn(`MCP connection lost: ${serverId}`);
+      this.updateStatusBar();
     });
 
     this.pool.on('connectionError', ({ serverId, error }) => {
       this.logger.error(`MCP connection error: ${serverId}`, error);
+      this.updateStatusBar();
     });
 
     this.pool.on('connectionInitialized', ({ serverId, info }) => {
       this.logger.info(`MCP server initialized: ${serverId}`, info);
+      this.updateStatusBar();
+    });
+
+    this.pool.on('connectionCreated', ({ serverId }) => {
+      this.logger.info(`MCP connection created: ${serverId}`);
+      this.updateStatusBar();
+    });
+
+    this.pool.on('connectionClosed', ({ serverId }) => {
+      this.logger.info(`MCP connection closed: ${serverId}`);
+      this.updateStatusBar();
     });
   }
 
@@ -77,6 +95,9 @@ export class MCPManager {
       
       // Reload server configurations
       await this.loadServers();
+      
+      // Update status bar to show no connections initially
+      statusBar.updateConnectionCount(this.context, 0);
       
       this.logger.info(`Reloaded ${this.servers.size} MCP servers`);
     } catch (error) {
@@ -368,6 +389,29 @@ export class MCPManager {
         this.logger.error('Health check failed', error);
       }
     }, 5 * 60 * 1000);
+  }
+
+  private updateStatusBar(): void {
+    try {
+      const poolStats = this.pool.getStatistics();
+      const allStatuses = this.pool.getAllConnectionStatuses();
+      const connectedCount = Array.from(allStatuses.values())
+        .filter(status => status.connected).length;
+      
+      this.logger.info(`Status bar update: ${connectedCount}/${this.servers.size} connected servers`);
+      
+      // Log detailed connection status for debugging
+      if (allStatuses.size > 0) {
+        const statusDetails = Array.from(allStatuses.entries()).map(([serverId, status]) => 
+          `${serverId}: ${status.connected ? 'connected' : 'disconnected'} (last used: ${status.lastUsed?.toLocaleTimeString() || 'never'})`
+        ).join(', ');
+        this.logger.debug(`Connection details: ${statusDetails}`);
+      }
+      
+      statusBar.updateConnectionCount(this.context, connectedCount);
+    } catch (error) {
+      this.logger.error('Failed to update status bar', error);
+    }
   }
 
   // Statistics and monitoring

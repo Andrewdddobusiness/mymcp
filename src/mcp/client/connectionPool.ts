@@ -17,7 +17,7 @@ export class MCPConnectionPool extends EventEmitter {
   constructor(
     private maxConnections = 10,
     private connectionTimeout = 30000,
-    private idleTimeout = 300000, // 5 minutes
+    private idleTimeout = 1800000, // 30 minutes
     private maxUseCount = 1000
   ) {
     super();
@@ -269,7 +269,9 @@ export class MCPConnectionPool extends EventEmitter {
       
       // Disconnect idle connections
       toDisconnect.forEach(serverId => {
+        console.log(`[ConnectionPool] Disconnecting idle server: ${serverId} (idle for ${Math.round((now.getTime() - this.connections.get(serverId)!.lastUsed.getTime()) / 1000 / 60)} minutes)`);
         this.disconnect(serverId).catch(error => {
+          console.error(`[ConnectionPool] Failed to disconnect idle server ${serverId}:`, error);
           this.emit('cleanupError', { serverId, error });
         });
       });
@@ -287,16 +289,23 @@ export class MCPConnectionPool extends EventEmitter {
     
     const promises = Array.from(this.connections.entries()).map(async ([serverId, connection]) => {
       try {
+        console.log(`[ConnectionPool] Health check for ${serverId}...`);
         const healthy = await connection.client.ping();
         results.set(serverId, healthy);
         
         if (!healthy) {
+          console.warn(`[ConnectionPool] Server ${serverId} failed health check, disconnecting`);
           // Connection is unhealthy, remove it
           await this.disconnect(serverId);
+        } else {
+          console.log(`[ConnectionPool] Server ${serverId} health check passed`);
         }
       } catch (error) {
+        console.error(`[ConnectionPool] Health check error for ${serverId}:`, error);
         results.set(serverId, false);
-        await this.disconnect(serverId);
+        // Only disconnect on repeated failures, not single failures
+        console.warn(`[ConnectionPool] Server ${serverId} health check failed, keeping connection for retry`);
+        // await this.disconnect(serverId);
       }
     });
     
