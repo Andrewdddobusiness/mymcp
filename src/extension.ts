@@ -23,7 +23,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // Initialize components
     await mcpManager.initialize();
-    await copilotIntegration.register();
+    
+    // Register Copilot integration (non-blocking)
+    try {
+      await copilotIntegration.register();
+    } catch (error) {
+      logger.warn('Copilot integration failed, continuing with basic MCP functionality', error);
+    }
+    
     statusBar.show(context);
 
     // Set up configuration change listener
@@ -40,9 +47,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   } catch (error) {
     logger.error('Failed to activate extension', error);
     vscode.window.showErrorMessage(
-      `Failed to activate Copilot MCP Bridge: ${error.message}`
+      `Failed to activate Copilot MCP Bridge: ${(error as Error).message}`
     );
-    throw error;
+    // Don't throw error - let VS Code continue loading the extension with basic functionality
+    logger.warn('Extension loaded with limited functionality');
   }
 }
 

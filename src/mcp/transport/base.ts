@@ -80,14 +80,19 @@ export abstract class Transport extends EventEmitter {
           } else if (message.method && message.id) {
             this.emit('request', message as MCPRequest);
           } else if (message.id && (message.result !== undefined || message.error !== undefined)) {
-            this.emit('response', message as MCPResponse);
+            const response = message as MCPResponse;
+            this.emit('response', response);
+            // Also handle pending requests
+            this.handleResponse(response);
           }
         } catch (parseError) {
-          this.emit('error', new Error(`Invalid JSON message: ${parseError.message}`));
+          console.error(`[${this.config.id || 'transport'}] JSON parse error:`, parseError, 'Raw message:', data);
+          this.emit('error', new Error(`Invalid JSON message: ${(parseError as Error).message}`));
         }
       }
     } catch (error) {
-      this.emit('error', new Error(`Failed to handle message: ${error.message}`));
+      console.error(`[${this.config.id || 'transport'}] Message handling error:`, error);
+      this.emit('error', new Error(`Failed to handle message: ${(error as Error).message}`));
     }
   }
 

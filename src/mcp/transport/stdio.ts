@@ -30,10 +30,11 @@ export class StdioTransport extends Transport {
       const { command, args = [], env = {} } = this.config;
 
       // Spawn the process
+      console.log(`[${this.config.id}] Spawning process: ${command} ${args.join(' ')}`);
       this.process = spawn(command, args, {
         env: { ...process.env, ...env },
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false
+        shell: false // Try without shell first
       });
 
       // Set up readline for line-by-line reading
@@ -45,12 +46,14 @@ export class StdioTransport extends Transport {
       // Handle incoming messages
       this.readline.on('line', (line) => {
         if (line.trim()) {
+          console.log(`[${this.config.id}] Received line:`, line.trim());
           this.handleMessage(line);
         }
       });
 
       // Handle process events
       this.process.on('error', (error) => {
+        console.error(`[${this.config.id}] Process error:`, error);
         this.handleError(new Error(`Process error: ${error.message}`));
       });
 
@@ -78,11 +81,15 @@ export class StdioTransport extends Transport {
         const message = data.toString().trim();
         if (message) {
           this.emit('stderr', message);
+          // Also log stderr messages as errors for debugging
+          console.error(`[${this.config.id || 'stdio'}] stderr:`, message);
         }
       });
 
       // Wait for process to be ready
+      console.log(`[${this.config.id}] Process spawned, waiting for ready state...`);
       await this.waitForProcessReady();
+      console.log(`[${this.config.id}] Process ready, calling handleConnect...`);
       
       this.handleConnect();
     } catch (error) {
@@ -109,9 +116,9 @@ export class StdioTransport extends Transport {
         if (this.process && !this.process.killed && this.process.exitCode === null) {
           resolve();
         } else {
-          reject(new Error('Process not ready'));
+          reject(new Error(`Process not ready - killed: ${this.process?.killed}, exitCode: ${this.process?.exitCode}`));
         }
-      }, 100);
+      }, 500); // Increased timeout for npx
 
       // If process dies during wait, reject immediately
       this.process.once('exit', () => {
@@ -178,15 +185,19 @@ export class StdioTransport extends Transport {
         return;
       }
 
+      console.log(`[${this.config.id}] Sending data:`, data.trim());
       const written = this.process.stdin.write(data, 'utf8', (error) => {
         if (error) {
+          console.error(`[${this.config.id}] Write error:`, error);
           reject(new Error(`Failed to write to stdin: ${error.message}`));
         } else {
+          console.log(`[${this.config.id}] Data written successfully`);
           resolve();
         }
       });
 
       if (!written) {
+        console.log(`[${this.config.id}] Handling backpressure...`);
         // Handle backpressure
         this.process.stdin.once('drain', resolve);
       }

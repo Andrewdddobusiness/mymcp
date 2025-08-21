@@ -22,7 +22,7 @@ export class CopilotIntegration {
       this.logger.info('Registering Copilot integration components...');
 
       // Check if chat APIs are available
-      if (!(vscode.chat as any)) {
+      if (!(vscode as any).chat) {
         this.logger.warn('VS Code Chat API not available - Copilot chat features disabled');
         // Still register commands for MCP management
         this.registerAdditionalCommands();
@@ -31,10 +31,18 @@ export class CopilotIntegration {
       }
 
       // Register chat participant
-      await this.chatParticipant.register();
+      try {
+        await this.chatParticipant.register();
+      } catch (error) {
+        this.logger.warn('Chat participant registration failed, continuing without chat features', error);
+      }
 
       // Register context providers
-      await this.contextProvider.register();
+      try {
+        await this.contextProvider.register();
+      } catch (error) {
+        this.logger.warn('Context provider registration failed, continuing without context features', error);
+      }
 
       // Register additional command handlers
       this.registerAdditionalCommands();
@@ -45,7 +53,8 @@ export class CopilotIntegration {
       this.logger.info('Copilot integration registered successfully');
     } catch (error) {
       this.logger.error('Failed to register Copilot integration', error);
-      throw error;
+      // Don't throw error - let the extension continue with basic MCP functionality
+      this.logger.warn('Continuing with basic MCP functionality only');
     }
   }
 
@@ -211,7 +220,7 @@ export class CopilotIntegration {
       }
 
       // Check if chat API is available
-      if (!vscode.chat) {
+      if (!(vscode as any).chat) {
         this.logger.warn('VS Code Chat API not available');
         return false;
       }

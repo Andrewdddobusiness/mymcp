@@ -16,19 +16,25 @@ export class MCPManager {
     private context: vscode.ExtensionContext,
     private logger: Logger
   ) {
-    this.setupEventHandlers();
+    // Event handlers will be set up in initialize()
   }
 
   async initialize(): Promise<void> {
     this.logger.info('Initializing MCP Manager...');
 
     try {
+      // Set up event handlers first
+      this.setupEventHandlers();
+
       // Set up discovery watchers
       this.discoveryWatchers = this.discovery.setupWatchers();
       this.context.subscriptions.push(...this.discoveryWatchers);
 
       // Load server configurations
       await this.loadServers();
+
+      // Try to connect to all servers
+      await this.connectToAllServers();
 
       // Start periodic status checks
       this.startStatusChecks();
@@ -97,6 +103,32 @@ export class MCPManager {
       this.logger.error('Failed to load servers', error);
       throw error;
     }
+  }
+
+  private async connectToAllServers(): Promise<void> {
+    this.logger.info('Attempting to connect to all servers...');
+    
+    const connectionPromises = Array.from(this.servers.entries()).map(async ([serverId, config]) => {
+      try {
+        this.logger.info(`Connecting to server: ${serverId}`);
+        this.logger.debug(`Server config:`, config);
+        const client = await this.pool.getConnection(serverId, config);
+        this.logger.info(`Successfully connected to server: ${serverId}`);
+        return { serverId, success: true, client };
+      } catch (error) {
+        this.logger.error(`Failed to connect to server: ${serverId}`, {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          error: error
+        });
+        return { serverId, success: false, error };
+      }
+    });
+
+    const results = await Promise.allSettled(connectionPromises);
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    
+    this.logger.info(`Connected to ${successful}/${this.servers.size} servers`);
   }
 
   async getServerStatus(): Promise<ServerListItem[]> {

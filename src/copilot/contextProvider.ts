@@ -11,8 +11,13 @@ export class MCPContextProvider {
   async register(): Promise<void> {
     try {
       // Check if chat variable resolver API is available
-      const chatApi = (vscode.chat as any);
-      if (!chatApi || !chatApi.registerChatVariableResolver) {
+      const chatApi = (vscode as any).chat;
+      if (!chatApi) {
+        this.logger.warn('VS Code Chat API not available - context providers disabled');
+        return;
+      }
+
+      if (typeof chatApi.registerChatVariableResolver !== 'function') {
         this.logger.warn('Chat variable resolver API not available in this VS Code version');
         return;
       }
@@ -41,7 +46,7 @@ export class MCPContextProvider {
       this.logger.info('MCP context providers registered successfully');
     } catch (error) {
       this.logger.error('Failed to register context providers', error);
-      throw error;
+      // Don't throw error - this is not critical for basic MCP functionality
     }
   }
 

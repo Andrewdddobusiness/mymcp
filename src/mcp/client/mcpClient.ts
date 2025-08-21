@@ -83,6 +83,11 @@ export class MCPClient extends EventEmitter {
       this.handleNotification(notification);
     });
 
+    this.transport.on('response', (response: MCPMessage) => {
+      console.log(`[${this.serverId}] Received response:`, response);
+      // The base transport should handle this automatically, but let's make sure
+    });
+
     this.transport.on('stateChanged', (state) => {
       this.emit('stateChanged', state);
     });
@@ -93,20 +98,28 @@ export class MCPClient extends EventEmitter {
       return;
     }
 
-    // Connect transport
-    await this.transport.connect();
+    try {
+      // Connect transport
+      console.log(`[${this.serverId}] Attempting transport connection...`);
+      await this.transport.connect();
+      console.log(`[${this.serverId}] Transport connected, initializing protocol...`);
 
-    // Initialize MCP protocol
-    if (!this.initializationPromise) {
-      this.initializationPromise = this.initialize();
+      // Initialize MCP protocol
+      if (!this.initializationPromise) {
+        this.initializationPromise = this.initialize();
+      }
+
+      await this.initializationPromise;
+      console.log(`[${this.serverId}] MCP client fully connected and initialized`);
+    } catch (error) {
+      console.error(`[${this.serverId}] Connection failed:`, error);
+      throw error;
     }
-
-    await this.initializationPromise;
   }
 
   private async initialize(): Promise<void> {
     const request: InitializeRequest = {
-      protocolVersion: '1.0',
+      protocolVersion: '2024-11-05',
       clientInfo: {
         name: 'copilot-mcp-bridge',
         version: '0.1.0'
@@ -139,15 +152,15 @@ export class MCPClient extends EventEmitter {
   private async discoverCapabilities(): Promise<void> {
     const promises: Promise<void>[] = [];
 
-    // Discover tools
-    if (this.capabilities.tools?.list) {
-      promises.push(this.discoverTools());
-    }
+    // Always try to discover tools (some servers don't properly advertise capabilities)
+    promises.push(this.discoverTools().catch(error => {
+      console.warn(`[${this.serverId}] Failed to discover tools:`, error.message);
+    }));
 
-    // Discover resources
-    if (this.capabilities.resources?.list) {
-      promises.push(this.discoverResources());
-    }
+    // Always try to discover resources
+    promises.push(this.discoverResources().catch(error => {
+      console.warn(`[${this.serverId}] Failed to discover resources:`, error.message);
+    }));
 
     await Promise.all(promises);
   }
@@ -205,24 +218,24 @@ export class MCPClient extends EventEmitter {
 
   // Tool methods
   async listTools(): Promise<MCPTool[]> {
-    if (!this.capabilities.tools?.list) {
-      throw new Error('Server does not support tool listing');
-    }
-
     // Return cached tools if available
     if (this.tools.size > 0) {
       return Array.from(this.tools.values());
     }
 
-    // Fetch fresh tool list
-    await this.discoverTools();
+    // Fetch fresh tool list (try even if not advertised in capabilities)
+    try {
+      await this.discoverTools();
+    } catch (error) {
+      console.warn(`[${this.serverId}] Tool discovery failed:`, error);
+      // Return empty array instead of throwing
+    }
+    
     return Array.from(this.tools.values());
   }
 
   async executeTool(name: string, args?: any): Promise<any> {
-    if (!this.capabilities.tools?.execute) {
-      throw new Error('Server does not support tool execution');
-    }
+    // Try to execute even if not advertised (some servers don't properly advertise)
 
     const tool = this.tools.get(name);
     if (!tool) {

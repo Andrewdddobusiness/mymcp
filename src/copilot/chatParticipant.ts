@@ -51,7 +51,7 @@ export class MCPChatParticipant {
       this.logger.info('MCP chat participant registered successfully');
     } catch (error) {
       this.logger.error('Failed to register chat participant', error);
-      throw error;
+      // Don't throw error - this is not critical for basic MCP functionality
     }
   }
 

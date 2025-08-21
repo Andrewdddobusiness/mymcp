@@ -80,6 +80,7 @@ export class MCPConnectionPool extends EventEmitter {
   }
 
   private async createConnection(serverId: string, config: ServerConfig): Promise<MCPClient> {
+    console.log(`[ConnectionPool] Creating connection for ${serverId}`, config);
     const client = new MCPClient(serverId, config);
     
     // Set up event handlers
@@ -88,19 +89,33 @@ export class MCPConnectionPool extends EventEmitter {
     });
     
     client.on('error', (error) => {
+      console.error(`[ConnectionPool] Client error for ${serverId}:`, error);
       this.emit('connectionError', { serverId, error });
     });
 
     client.on('initialized', (info) => {
+      console.log(`[ConnectionPool] Client initialized for ${serverId}:`, info);
       this.emit('connectionInitialized', { serverId, info });
     });
 
     // Connect with timeout
+    console.log(`[ConnectionPool] Starting connection with ${this.connectionTimeout}ms timeout for ${serverId}`);
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection timeout')), this.connectionTimeout);
+      setTimeout(() => {
+        console.error(`[ConnectionPool] Connection timeout for ${serverId}`);
+        reject(new Error('Connection timeout'));
+      }, this.connectionTimeout);
     });
 
-    await Promise.race([client.connect(), timeoutPromise]);
+    const connectPromise = client.connect().then(() => {
+      console.log(`[ConnectionPool] Client connected successfully for ${serverId}`);
+      return client;
+    }).catch(error => {
+      console.error(`[ConnectionPool] Client connection failed for ${serverId}:`, error);
+      throw error;
+    });
+
+    await Promise.race([connectPromise, timeoutPromise]);
     
     return client;
   }
